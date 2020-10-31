@@ -25,4 +25,7 @@ Note that the Ctrl+Z command is the same on both Windows and Mac. If there is no
 ## Important Note!
 The interface is **designed for my experimentation** and **is not a typical BF interpreter interface**. For example, right now, there is no way to directly view the raw values being written to the output buffer. This is because I'm using this project as a way to experiment with getting the BF language to interact with "devices" using its I/O commands. As of writing this README, for example, the interface draws a green 256x256 square. This is a virtual "screen" that the BF program can draw to by outputting the number 2, followed by two bytes signifying XY coordinates, followed by three bytes representing RGB values for the color of the pixel to draw. For an example of this working, run `/src/code/mouse.b` in the interpreter to see BF code reading the position of the mouse in the 256x256 "screen" and then drawing a pixel at that position.
 
+## gscript
+Galaxy script is a work-in progress language that compiles to regular old BF. It has no notable or novel language features. In essence, it takes common BF idioms and shortens them to a keyword, which is then expanded back to regular BF code when run through the "compiler." It is simply designed to make writing BF a little less painful for me.
+
 <sub>(Brain icon by Arjun Adamson from the Noun Project)</sub>
