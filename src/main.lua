@@ -1,8 +1,8 @@
 local galaxy, gscript = unpack(require("galaxy"))
 local filename = ""
 local vm = nil
-local fh = 16
-local cpt = 1 -- Commands per tick
+local font_height = 16
+local commands_per_tick = 1
 
 local speed = 0
 
@@ -13,11 +13,11 @@ local bgcolor = {0,0,0}
 	1 = With update
 	2 = As fast as possible
 ]]
-local runMode = 0
+local run_mode = 0
 
 function love.load()
 	local inconsolata = love.graphics.newFont("font/Inconsolata-Regular.ttf", 16)
-	fh = inconsolata:getHeight()
+	font_height = inconsolata:getHeight()
 	love.graphics.setFont(inconsolata)
 end
 
@@ -59,13 +59,13 @@ local peripherals = {
 
 function love.update(dt)
 	if vm then
-		if runMode == 1 and vm.IsReady() then
-			for i = 1, cpt do
+		if run_mode == 1 and vm.IsReady() then
+			for i = 1, commands_per_tick do
 				vm.Step()
 			end
 		end
 
-		speed = math.floor(1 / dt) * cpt
+		speed = math.floor(1 / dt) * commands_per_tick
 	end
 end
 
@@ -134,9 +134,9 @@ function love.draw()
 		end
 
 		if status == "Pause" then
-			if runMode == 1 then
+			if run_mode == 1 then
 				lines:push("Running VM at ~" .. tostring(speed) .. " chars/sec.")
-			elseif runMode == 0 then
+			elseif run_mode == 0 then
 				lines:push("VM is paused.")
 			end
 		elseif status == "Done" then
@@ -152,7 +152,7 @@ function love.draw()
 	end
 
 	for i, v in ipairs(lines) do
-		love.graphics.print(v, 2, 2 + fh * (i - 1))
+		love.graphics.print(v, 2, 2 + font_height * (i - 1))
 	end
 end
 
@@ -182,40 +182,35 @@ function setUpPeripherals(machine)
 end
 
 function love.filedropped(file)
-	local fn = file:getFilename()
-	filename = fn
+	local filename = file:getFilename()
+	local code
 
-	if fn:sub(-2, -1) == ".b" or fn:sub(-3, -1) == ".bf" then
+	if filename:sub(-2, -1) == ".b" or filename:sub(-3, -1) == ".bf" then
 		print("Brainfuck file dropped. Reading...")
 		file:open("r")
-		local code = file:read()
-
-		print("Creating vm...")
-		vm = galaxy.Make()
-		vm.SetCode(code)
-
-		setUpPeripherals(vm)
-
-		print("Done.")
-	elseif #fn > 4 and fn:sub(-4, -1) == ".gsc" then
+		code = file:read()
+	elseif #filename > 4 and filename:sub(-4, -1) == ".gsc" then
 		print("GScript file dropped. Reading...")
 		file:open("r")
 		local script = file:read()
 
 		print("Compiling...")
-		local code = gscript.CompileBF(script)
+		code = gscript.CompileBF(script)
 		print(code)
-
-		print("Creating vm...")
-		vm = galaxy.Make()
-		vm.SetCode(code)
-
-		setUpPeripherals(vm)
-
-		print("Done.")
 	else
 		print("Not a Brainfuck or GSC file.")
+		return
 	end
+
+	file:close()
+
+	print("Creating vm...")
+	vm = galaxy.CreateVM()
+	vm.SetCode(code)
+
+	setUpPeripherals(vm)
+
+	print("Done.")
 end
 
 function love.textinput(t)
@@ -227,18 +222,18 @@ end
 function love.keypressed(key, code, isrepeat)
 	if vm then
 		if vm.GetStatus() ~= "Input" then
-			if key == "right" and runMode == 0 then
+			if key == "right" and run_mode == 0 then
 				vm.Step()
 			elseif key == "space" then
-				if runMode == 0 then
-					runMode = 1
+				if run_mode == 0 then
+					run_mode = 1
 				else
-					runMode = 0
+					run_mode = 0
 				end
 			elseif key == "up" then
-				cpt = cpt + 1
-			elseif key == "down" and cpt > 1 then
-				cpt = cpt - 1
+				commands_per_tick = commands_per_tick + 1
+			elseif key == "down" and commands_per_tick > 1 then
+				commands_per_tick = commands_per_tick - 1
 			end
 		elseif love.keyboard.isDown("rctrl") or love.keyboard.isDown("lctrl") then
 			if key == "z" then

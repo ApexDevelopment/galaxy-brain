@@ -1,4 +1,4 @@
-local function Make()
+local function CreateVM()
 	local State = {
 		Status = "Pause",
 		Error = nil,
@@ -50,17 +50,17 @@ local function Make()
 	local function SetCode(code)
 		-- Pre-process to remove non-brainfuck characters
 		-- Significantly speeds up execution for commented files
-		local newCode = {}
+		local new_code = {}
 		
 		for i = 1, #code do
 			local c = code:sub(i, i)
 			if string.find("+-<>[],.", c, 1, true) ~= nil then
-				newCode[#newCode + 1] = c
+				new_code[#new_code + 1] = c
 			end
 		end
 		
-		State.Code = table.concat(newCode)
-		State.NextToExecute = newCode[1]
+		State.Code = table.concat(new_code)
+		State.NextToExecute = new_code[1]
 	end
 
 	local function Peek(location)
@@ -104,49 +104,49 @@ local function Make()
 		end
 
 		local memory = State.Memory
-		local memPtr = State.MemoryIndex
-		local codePtr = State.CodeIndex
-		local command = State.Code:sub(codePtr, codePtr)
+		local mem_ptr = State.MemoryIndex
+		local code_ptr = State.CodeIndex
+		local command = State.Code:sub(code_ptr, code_ptr)
 
 		if command == "+" then
-			memory[memPtr] = memory[memPtr] + 1
+			memory[mem_ptr] = memory[mem_ptr] + 1
 
-			if memory[memPtr] == 256 then
-				memory[memPtr] = 0
+			if memory[mem_ptr] == 256 then
+				memory[mem_ptr] = 0
 			end
 		elseif command == "-" then
-			memory[memPtr] = memory[memPtr] - 1
+			memory[mem_ptr] = memory[mem_ptr] - 1
 
-			if memory[memPtr] == -1 then
-				memory[memPtr] = 255
+			if memory[mem_ptr] == -1 then
+				memory[mem_ptr] = 255
 			end
 		elseif command == ">" then
-			memPtr = memPtr + 1
+			mem_ptr = mem_ptr + 1
 
-			if memPtr > 30000 then
-				memPtr = 1
+			if mem_ptr > 30000 then
+				mem_ptr = 1
 			end
 
-			if memory[memPtr] == nil then
-				memory[memPtr] = 0
+			if memory[mem_ptr] == nil then
+				memory[mem_ptr] = 0
 			end
 
-			State.MemoryIndex = memPtr
+			State.MemoryIndex = mem_ptr
 		elseif command == "<" then
-			memPtr = memPtr - 1
+			mem_ptr = mem_ptr - 1
 
-			if memPtr < 1 then
-				memPtr = 30000
+			if mem_ptr < 1 then
+				mem_ptr = 30000
 			end
 
-			State.MemoryIndex = memPtr
+			State.MemoryIndex = mem_ptr
 		elseif command == "[" then
-			if memory[memPtr] == 0 then
+			if memory[mem_ptr] == 0 then
 				local count = 0
 
 				repeat
-					codePtr = codePtr + 1
-					local c = State.Code:sub(codePtr, codePtr)
+					code_ptr = code_ptr + 1
+					local c = State.Code:sub(code_ptr, code_ptr)
 
 					if c == "[" then
 						count = count + 1
@@ -155,14 +155,14 @@ local function Make()
 					end
 				until count == -1
 			else
-				State.ReturnStack:push(codePtr - 1)
+				State.ReturnStack:push(code_ptr - 1)
 			end
 		elseif command == "]" then
 			if #State.ReturnStack > 0 then
 				local popped = State.ReturnStack:pop()
 
-				if memory[memPtr] ~= 0 then
-					codePtr = popped
+				if memory[mem_ptr] ~= 0 then
+					code_ptr = popped
 				end
 			else
 				State.Error = "Return stack underflow (too many closing brackets?)"
@@ -176,16 +176,16 @@ local function Make()
 				return
 			end
 
-			memory[memPtr] = table.remove(State.Input, 1)
+			memory[mem_ptr] = table.remove(State.Input, 1)
 		elseif command == "." then
 			if State.OutputHandler then
-				State.OutputHandler(memory[memPtr])
+				State.OutputHandler(memory[mem_ptr])
 			else
-				State.Buffer[#State.Buffer + 1] = memory[memPtr]
+				State.Buffer[#State.Buffer + 1] = memory[mem_ptr]
 			end
 		end
 
-		State.CodeIndex = codePtr + 1
+		State.CodeIndex = code_ptr + 1
 		State.LastExecuted = command
 		State.NextToExecute = State.Code:sub(State.CodeIndex, State.CodeIndex)
 
@@ -214,5 +214,5 @@ local function Make()
 end
 
 return {
-	["Make"] = Make
+	["CreateVM"] = CreateVM
 }
